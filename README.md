@@ -64,7 +64,7 @@ I tried to mirror Uncle Bobs code as closely as possible, that includes variable
 
 - Used `Vec` instead of `vector`, `Pos` instead of `position`, and `Obj` instead of `object`
 - Used value classes and type aliases for stuff like the age of an collision, the delay setting, the history of worlds, etc.
-    Since Scala ist statically types, using small domain types like this can increase readability on the ability to reason about the code.
+    Since Scala is statically typed, using small domain types like this can increase readability, the ability to reason about the code, or the amount of support we get from the compiler.
     On top, Scala makes it very easy to create such types and properly used value class have no runtime overhead, they exist only during compile time.
 
 
@@ -143,7 +143,28 @@ The general intention (entites) of the program did not change, but I modified so
 
 Clojure and Scala are not so different. This is mostly due to the functional nature of the program.
 Of course you can have Scala and Clojure code that differ tremendously and especially Scala code, that is not functional at all.
-But, if you know your way around functional programming, the difference between Scala and Clojure becomes more and more just syntax (and a bit of types). Using higher order functions, dealing with state and immutability, recursion etc. is all very similar (though, Scala __does__ have tail recursion)
+But, if you know your way around functional programming, the difference between Scala and Clojure becomes more and more just syntax (and a bit of types). Using higher order functions, dealing with state and immutability, recursion etc. is all very similar (though, Scala __does__ have tail recursion).
+A typical landmark of functional code is, that functions tend to have a bunch of assignment statements and then few, ideally just one actual thing they do.
+This looks quite good in Clojure with `let`.
+
+```clojure
+(defn foo [a b]
+  (let [c (:bar a)
+        d (:baz b)
+        e (qux/quaz c d)]
+    (+ 23 42 1337)))
+```
+
+Whereas in Scala, this would only be convention.
+
+```scala
+def foo(a: Any, b: Any) = {
+  val c = a.bar
+  val d = b.baz
+  val e = qux.quaz(c, d)
+  23 + 42 + 1337
+}
+```
 
 
 ### Atoms
@@ -181,6 +202,71 @@ Or I don't quite understand it yet, whatever is more likely.
 I choose to ignore this and instead stick with ye good olde Scala collections.
 
 
+### Similarities
+
+Some aspects seem quite different at first glance, but are actually very similar.
+
+#### assoc
+
+Clojures `assoc`
+
+```clojure
+(assoc o :position (position/add p v))
+```
+
+and Scalas `copy` on `case class`es
+
+```scala
+o.copy(pos = Pos.add(p, v))
+```
+
+#### destructuring
+
+Clojure can destructure parameters
+
+```clojure
+(defn merge [{n1 :name, m1 :mass, v1 :velocity f1 :force, :as o1}
+             {n2 :name, m2 :mass, v2 :velocity f2 :force, :as o2}]
+  ...)
+```
+
+Scala uses pattern matching for destructuring
+
+```scala
+def merge(o1: Obj, o2: Obj): Obj = {
+  val (Obj(_,  m1, v1, f1, n1), Obj(_,  m2, v2, f2, n2)) = (o1, o2)
+  ...
+}
+````
+
+#### loops
+
+Clojure with overloaded methods and recur
+
+```clojure
+(defn accumulate-forces
+  ([o world]
+   (assoc o :force (accumulate-forces o world (vector/make))))
+  ([o world f]
+   (cond
+     (empty? world) f
+     (= o (first world)) (recur o (rest world) f)
+     :else (recur o (rest world) (vector/add f (force-between o (first world)))))))
+```
+
+Scala idomatic code uses nested tail recursion for this
+
+```scala
+def accumulateForces(o: Obj, world: World): Obj = {
+  def recur(o: Obj, world: World, f: Vec): Vec =
+    if (world.isEmpty) f
+    else if (world.head == o) recur(o, world.tail, f)
+    else recur(o, world.tail, Vec.add(f, forceBetween(o, world.head)))
+  o.copy(force = recur(o, world, Vec()))
+}
+```
+
+
 ### Conciseness
 
 Scala claims to allow you to write concise and expressive code. Clojure even more so.
@@ -188,7 +274,7 @@ There's even a [Twitter account](https://twitter.com/learnclojure) that teaches 
 
 However, these are the (totally scientific) line counts.
 
-Uncle Bobs CLojure code:
+Uncle Bobs Clojure code:
 
 ```
 ∵ cloc src/
@@ -224,7 +310,7 @@ SUM:                            13            129              0            579
 -------------------------------------------------------------------------------
 ```
 
-This includes source and test files and even my atom implementation.
+This includes source and test files plus my atom implementation and the additional features.
 If I count only the source files:
 
 Clojure:
