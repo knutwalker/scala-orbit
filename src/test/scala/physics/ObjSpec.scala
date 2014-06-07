@@ -1,12 +1,12 @@
 package physics
 
 class ObjSpec extends UnitSpec with TestUtilities {
-  val v0 = Vector()
-  val v11 = Vector(1, 1)
+  val v0 = Vec()
+  val v11 = Vec(1, 1)
   val o1 = Obj(Pos(1, 1), 2, v0, v0, "o1")
   val o2 = Obj(Pos(1, 2), 3, v0, v0, "o2")
   val o3 = Obj(Pos(4, 5), 4, v0, v0, "o3")
-  val os = List(o1, o2, o3)
+  val os = Vector(o1, o2, o3)
 
   test("default creation") {
     val o = Obj()
@@ -20,8 +20,8 @@ class ObjSpec extends UnitSpec with TestUtilities {
   test("defined creation") {
     val pos = Pos(1, 1)
     val mass = 2
-    val velocity = Vector(2, 2)
-    val force = Vector(3, 3)
+    val velocity = Vec(2, 2)
+    val force = Vec(3, 3)
     val name = "name"
     val o = Obj(pos, mass, velocity, force, name)
     assert(o.pos == pos)
@@ -38,12 +38,12 @@ class ObjSpec extends UnitSpec with TestUtilities {
   test("force between") {
     val c3r2 = 3 / math.sqrt(2)
     val o2 = Obj(Pos(2, 2), 3, v0, v0, "o2")
-    assert(vectorCloseTo(Vector(c3r2, c3r2), Obj.forceBetween(o1, o2)))
+    assert(vectorCloseTo(Vec(c3r2, c3r2), Obj.forceBetween(o1, o2)))
   }
 
   test("accumulate forces") {
     val accumulatedO1 = Obj.accumulateForces(o1, os)
-    val expected = Vector.add(Obj.forceBetween(o1, o2), Obj.forceBetween(o1, o3))
+    val expected = Vec.add(Obj.forceBetween(o1, o2), Obj.forceBetween(o1, o3))
     assert(vectorCloseTo(expected, accumulatedO1.force))
   }
 
@@ -58,7 +58,7 @@ class ObjSpec extends UnitSpec with TestUtilities {
   test("accelerate") {
     val o = Obj(Pos(), 2, v11, v11, "o1")
     val ao = Obj.accelerate(o)
-    assert(vectorCloseTo(Vector(1.5, 1.5), ao.velocity))
+    assert(vectorCloseTo(Vec(1.5, 1.5), ao.velocity))
   }
 
   test("accelerate all") {
@@ -91,14 +91,14 @@ class ObjSpec extends UnitSpec with TestUtilities {
   }
 
   test("merge") {
-    val o1 = Obj(Pos(1, 1), 2, Vector(1, 0), Vector(1, 1), "o1")
-    val o2 = Obj(Pos(1, 2), 3, Vector(-1, 0), Vector(1, 1) ,"o2")
+    val o1 = Obj(Pos(1, 1), 2, Vec(1, 0), Vec(1, 1), "o1")
+    val o2 = Obj(Pos(1, 2), 3, Vec(-1, 0), Vec(1, 1) ,"o2")
     val om = Obj.merge(o1, o2)
     assert(om.name == "o2.o1")
     assert(om.pos == Pos(1, 1.4))
     assert(om.mass == 5)
-    assert(om.velocity == Vector(-1.0 / 5, 0))
-    assert(om.force == Vector(2, 2))
+    assert(om.velocity == Vec(-1.0 / 5, 0))
+    assert(om.force == Vec(2, 2))
   }
 
   test("collide") {
