@@ -276,7 +276,7 @@ There's even a [Twitter account](https://twitter.com/learnclojure) that teaches 
 
 However, these are the (totally scientific) line counts.
 
-Complete project including test sources end everything:
+Complete project including test sources and everything:
 
 ```
 ∵ cloc clojureOrbit/src/ src/
@@ -333,7 +333,7 @@ SUM:                             9             65              0            257
 -------------------------------------------------------------------------------
 ```
 
-So, Scala and Clojure appear to be quite similar in their conciseness
+So, Scala and Clojure appear to be quite similar in this regard.
 Now, just counting lines is a silly measure for the conciseness of the code, but it's a start. I'd suspect different numbers if I were to compare Scala against, say, Java ... as I said, totally scientific.
 
 
