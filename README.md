@@ -219,6 +219,9 @@ and Scalas `copy` on `case class`es
 o.copy(pos = Pos.add(p, v))
 ```
 
+Even the number of parens are the same :-)
+
+
 #### destructuring
 
 Clojure can destructure parameters
