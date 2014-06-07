@@ -3,15 +3,13 @@ package physics
 case class Obj(pos: Pos = Pos(), mass: Double = 0, velocity: Vec = Vec(), force: Vec = Vec(), name: String = "TILT")
 object Obj {
 
-  type Objs = Vector[Obj]
-
   def gravity(m1: Double, m2: Double, r: Double): Double = (m1 * m2) / (r * r)
 
   def forceBetween(o1: Obj, o2: Obj): Vec = {
     val p1 = o1.pos
     val p2 = o2.pos
     val d = Pos.distance(p1, p2)
-    val uv = Vec.unit(Vec.subtract(p2, p1))
+    val uv = Vec.unit(Vec(Pos.subtract(p2, p1)))
     val g = gravity(o1.mass, o2.mass, d)
     Vec.scale(uv, g)
   }
@@ -41,7 +39,7 @@ object Obj {
 
   def reposition(o: Obj): Obj = {
     val Obj(p, _, v, _, _) = o
-    o.copy(pos = Pos.add(p, v))
+    o.copy(pos = Pos.add(p, v.p))
   }
 
   def repositionAll(os: Objs): Objs = os.map(reposition)
@@ -55,9 +53,9 @@ object Obj {
   private def centerOfMass(o1: Obj, o2: Obj): Pos = {
     val (Obj(p1, m1, _, _, _), Obj(p2, m2, _, _, _)) = (o1, o2)
     val s = m1 / (m1 + m2)
-    val uv = Vec.unit(Vec.subtract(p2, p1))
+    val uv = Vec.unit(Vec(Pos.subtract(p2, p1)))
     val d = Vec.scale(uv, s)
-    Pos.add(p1, d)
+    Pos.add(p1, d.p)
   }
 
   def merge(o1: Obj, o2: Obj): Obj = {

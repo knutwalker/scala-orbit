@@ -6,7 +6,11 @@ class ObjSpec extends UnitSpec with TestUtilities {
   val o1 = Obj(Pos(1, 1), 2, v0, v0, "o1")
   val o2 = Obj(Pos(1, 2), 3, v0, v0, "o2")
   val o3 = Obj(Pos(4, 5), 4, v0, v0, "o3")
-  val os = Vector(o1, o2, o3)
+  val world = Vector(o1, o2, o3)
+
+  def worldMomentum(world: Objs) = world.map(o => Vec.scale(o.velocity, o.mass)).reduce(Vec.add)
+
+  def worldEnergy(world: Objs) = world.map(o => square(Vec.magnitude(o.velocity)) * o.mass * 0.5)
 
   test("default creation") {
     val o = Obj()
@@ -37,22 +41,23 @@ class ObjSpec extends UnitSpec with TestUtilities {
 
   test("force between") {
     val c3r2 = 3 / math.sqrt(2)
+    val o1 = Obj(Pos(1, 1), 2, v0, v0, "o1")
     val o2 = Obj(Pos(2, 2), 3, v0, v0, "o2")
     assert(vectorCloseTo(Vec(c3r2, c3r2), Obj.forceBetween(o1, o2)))
   }
 
   test("accumulate forces") {
-    val accumulatedO1 = Obj.accumulateForces(o1, os)
+    val accumulatedO1 = Obj.accumulateForces(o1, world)
     val expected = Vec.add(Obj.forceBetween(o1, o2), Obj.forceBetween(o1, o3))
     assert(vectorCloseTo(expected, accumulatedO1.force))
   }
 
   test("calculate forces on all") {
-    val fs = Obj.calculateForcesOnAll(os)
+    val fs = Obj.calculateForcesOnAll(world)
     assert(fs.size == 3)
-    assert(fs(0) == Obj.accumulateForces(o1, os))
-    assert(fs(1) == Obj.accumulateForces(o2, os))
-    assert(fs(2) == Obj.accumulateForces(o3, os))
+    assert(fs(0) == Obj.accumulateForces(o1, world))
+    assert(fs(1) == Obj.accumulateForces(o2, world))
+    assert(fs(2) == Obj.accumulateForces(o3, world))
   }
 
   test("accelerate") {
@@ -62,8 +67,8 @@ class ObjSpec extends UnitSpec with TestUtilities {
   }
 
   test("accelerate all") {
-    val as = Obj.accelerateAll(Obj.calculateForcesOnAll(os))
-    val `->` = (Obj.accumulateForces(_:Obj, os)) andThen Obj.accelerate
+    val as = Obj.accelerateAll(Obj.calculateForcesOnAll(world))
+    val `->` = (Obj.accumulateForces(_: Obj, world)) andThen Obj.accelerate
     assert(as.size == 3)
     assert(as(0) == `->`(o1))
     assert(as(1) == `->`(o2))
@@ -77,8 +82,8 @@ class ObjSpec extends UnitSpec with TestUtilities {
   }
 
   test("reposition all") {
-    val rs = (Obj.calculateForcesOnAll _ andThen Obj.accelerateAll andThen Obj.repositionAll)(os)
-    val `->` = (Obj.accumulateForces(_: Obj, os)) andThen Obj.accelerate andThen Obj.reposition
+    val rs = (Obj.calculateForcesOnAll _ andThen Obj.accelerateAll andThen Obj.repositionAll)(world)
+    val `->` = (Obj.accumulateForces(_: Obj, world)) andThen Obj.accelerate andThen Obj.reposition
     assert(rs.size == 3)
     assert(rs(0) == `->`(o1))
     assert(rs(1) == `->`(o2))
@@ -102,13 +107,13 @@ class ObjSpec extends UnitSpec with TestUtilities {
   }
 
   test("collide") {
-    val cos = Obj.collide(o1, o2, os)
+    val cos = Obj.collide(o1, o2, world)
     assert(cos.size == 2)
     assert(cos.exists(_ == Obj.merge(o1, o2)))
     assert(cos.exists(_ == o3))
   }
   test("collide all") {
-    val cos = Obj.collideAll(os)
+    val cos = Obj.collideAll(world)
     assert(cos.size == 2)
     assert(cos.exists(_ == Obj.merge(o1, o2)))
     assert(cos.exists(_ == o3))

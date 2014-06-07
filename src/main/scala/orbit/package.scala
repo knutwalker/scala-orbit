@@ -4,12 +4,11 @@ import javax.swing.{Timer, JFrame, JPanel}
 
 import scala.collection.breakOut
 
-import physics.{Pos, Obj, Vec}
+import physics.{Objs, Pos, Obj, Vec}
 
 
 package object orbit {
   import atom._
-  import Obj.Objs
 
   private def rand(n: Double) = math.random * n
 
@@ -102,7 +101,7 @@ package object orbit {
     val sp = sun.pos
     val sd = Pos.distance(p, sp)
     val v = math.sqrt(1 / sd)
-    val direction = Vec.rotate90(Vec.unit(Vec.subtract(p, sp)))
+    val direction = Vec.rotate90(Vec.unit(Vec(Pos.subtract(p, sp))))
     Vec.scale(direction, rand(0.01) + (13.5 * v))
   }
 
