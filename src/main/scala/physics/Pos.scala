@@ -14,7 +14,7 @@ object Pos {
   def distance(p: Pos, q: Pos): Double =
     math.sqrt(math.pow(p.x - q.x, 2) + math.pow(p.y - q.y, 2))
 
-  private def mean(a: Double, b: Double) =
+  def mean(a: Double, b: Double) =
     (a + b) / 2
 
   def average(p: Pos, q: Pos): Pos = {

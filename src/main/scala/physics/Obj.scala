@@ -48,7 +48,7 @@ object Obj {
     distance <= (radius max 3)
   }
 
-  private def centerOfMass(o1: Obj, o2: Obj): Pos = {
+  def centerOfMass(o1: Obj, o2: Obj): Pos = {
     val (Obj(p1, m1, _, _, _), Obj(p2, m2, _, _, _)) = (o1, o2)
     val s = m1 / (m1 + m2)
     val uv = Vec.unit(Vec(Pos.subtract(p2, p1)))
@@ -68,10 +68,10 @@ object Obj {
     Obj(p, m, v, f, n)
   }
 
-  private def remove(o: Obj, world: World) =
+  def remove(o: Obj, world: World) =
     world.filterNot(_ == o)
 
-  private def differenceList(w1: World, w2: World) =
+  def differenceList(w1: World, w2: World) =
     w2.foldLeft(w1)((w, o) => remove(o, w))
 
   def collideAll(world: World): (List[Pos], World) = {

@@ -17,13 +17,13 @@ package object orbit {
   val center = Pos(500, 500)
   val historySize = 70
 
-  private def sizeByMass(o: Obj) =
+  def sizeByMass(o: Obj) =
     math.sqrt(o.mass)
 
-  private def opacity(epoch: Int): Int =
+  def opacity(epoch: Int): Int =
     255 - (epoch * 255.0 / historySize).toInt
 
-  private def colorByMass(o: Obj, epoch: Int) = o.mass match {
+  def colorByMass(o: Obj, epoch: Int) = o.mass match {
     case m if m < 1  => new Color(0, 0, 0, opacity(epoch))
     case m if m < 2  => new Color(210, 105, 30, opacity(epoch))
     case m if m < 5  => new Color(255, 0, 0, opacity(epoch))
@@ -33,7 +33,7 @@ package object orbit {
     case _           => new Color(255, 215, 0, opacity(epoch))
   }
 
-  private def toObjectCoords(screenCoords: Pos, mag: Magnification, sunCenter: Pos): Pos = {
+  def toObjectCoords(screenCoords: Pos, mag: Magnification, sunCenter: Pos): Pos = {
     val xOffset = center.x - (mag.m * sunCenter.x)
     val yOffset = center.y - (mag.m * sunCenter.y)
     val x = (screenCoords.x - xOffset) / mag.m
@@ -41,7 +41,7 @@ package object orbit {
     Pos(x, y)
   }
 
-  private def toScreenCoords(objectCoords: Pos, mag: Magnification, sunCenter: Pos): Pos = {
+  def toScreenCoords(objectCoords: Pos, mag: Magnification, sunCenter: Pos): Pos = {
     val xOffset = center.x - (mag.m * sunCenter.x)
     val yOffset = center.y - (mag.m * sunCenter.y)
     val x = xOffset + (mag.m * objectCoords.x)
@@ -49,51 +49,46 @@ package object orbit {
     Pos(x, y)
   }
 
-  private def toGraphicsCoord(obj: Obj, mag: Magnification, sunCenter: Pos): (Int, Int, Int) = {
-    val screen = toScreenCoords(obj.pos, mag, sunCenter)
-    val s = (mag.m * sizeByMass(obj)) max 2
-    val halfS = s / 2
+  def toGraphicsCoord(pos: Pos, size: Double, mag: Magnification, sunCenter: Pos): (Int, Int) = {
+    val screen = toScreenCoords(pos, mag, sunCenter)
+    val halfS = size / 2
     val x = (screen.x - halfS).toInt
     val y = (screen.y - halfS).toInt
-    (x, y, s.toInt)
+    (x, y)
   }
 
-  private def drawObject(g: Graphics, obj: Obj, epoch: Int, mag: Magnification, sunCenter: Pos): Unit = {
-    val (x, y, size) = toGraphicsCoord(obj, mag, sunCenter)
+  def drawObject(g: Graphics, obj: Obj, epoch: Int, mag: Magnification, sunCenter: Pos): Unit = {
+    val s = (mag.m * sizeByMass(obj)) max 2
+    val (x, y) = toGraphicsCoord(obj.pos, s, mag, sunCenter)
     val c = colorByMass(obj, epoch)
     g.setColor(c)
-    g.fillOval(x, y, size, size)
+    g.fillOval(x, y, s.toInt, s.toInt)
   }
 
-  private def drawWorld(g: Graphics, world: World, epoch: Int, controls: Controls): Unit = {
+  def drawWorld(g: Graphics, world: World, epoch: Int, controls: Controls): Unit =
     world.foreach(drawObject(g, _, epoch, controls.magnification, controls.sunCenter))
-  }
 
-  private def drawStatus(g: Graphics, world: World, controls: Controls): Unit = { import g._
+  def drawStatus(g: Graphics, world: World, controls: Controls): Unit = { import g._
     val text = f"Objects: ${world.size}%d, Magnification ${controls.magnification.m}%4.3g, Delay: ${controls.delay.d}%d, Tick: ${controls.tick}%d, Tick Time: ${controls.tickTime}%dms ${if (controls.trackSun) "Tracking" else ""}%s"
     setColor(Color.black)
     clearRect(0, 0, 1000, 20)
     drawString(text, 20, 20)
   }
 
-  private def drawCollision(g: Graphics, collision: Collision, mag: Magnification, sunCenter: Pos): Unit = {
-    val screen = toScreenCoords(collision.pos, mag, sunCenter)
+  def drawCollision(g: Graphics, collision: Collision, mag: Magnification, sunCenter: Pos): Unit = {
     val size = collision.age.a * 1.5
-    val halfSize = size / 2
-    val si = size.toInt
-    val x = (screen.x - halfSize).toInt
-    val y = (screen.y - halfSize).toInt
+    val (x, y) = toGraphicsCoord(collision.pos, size, mag, sunCenter)
     g.setColor(Color.red)
-    g.fillOval(x, y, si, si)
+    g.fillOval(x, y, size.toInt, size.toInt)
   }
 
-  private def drawCollisions(g: Graphics, controls: Controls): Unit =
+  def drawCollisions(g: Graphics, controls: Controls): Unit =
     controls.collision.foreach(c => drawCollision(g, c, controls.magnification, controls.sunCenter))
 
   def ageCollisions(collisions: List[Collision]): List[Collision] =
     collisions.withFilter(_.age > 1).map(c => c.copy(age = c.age.dec))
 
-  private def drawWorldPanel(g: Graphics, world: World, epoch: Int, controls: Atom[Controls]): Unit = {
+  def drawWorldPanel(g: Graphics, world: World, epoch: Int, controls: Atom[Controls]): Unit = {
     val c = controls.`@`
     drawWorld(g, world, epoch, c)
     drawCollisions(g, c)
@@ -101,51 +96,51 @@ package object orbit {
     controls.swap(c => c.copy(collision = ageCollisions(c.collision)))
   }
 
-  private def pruneHistory(worldHistory: Worlds): Worlds =
+  def pruneHistory(worldHistory: Worlds): Worlds =
     worldHistory.take(historySize)
 
-  private def updateWorldHistory(worldHistory: Worlds): (List[Pos], Worlds) = {
+  def updateWorldHistory(worldHistory: Worlds): (List[Pos], Worlds) = {
     val (collisions, updatedWorld) = Obj.updateAll(worldHistory.head)
     val newWorldHistory = updatedWorld :: worldHistory
     (collisions, pruneHistory(newWorldHistory))
   }
 
-  private def addCollisions(newCollisions: List[Pos], currentCollision: List[Collision]) =
+  def addCollisions(newCollisions: List[Pos], currentCollision: List[Collision]) =
     currentCollision ::: newCollisions.map(p => Collision(Age(10), p))
 
-  private def updateScreen(worldHistory: Atom[Worlds], controls: Atom[Controls]) = {
+  def updateScreen(worldHistory: Atom[Worlds], controls: Atom[Controls]) = {
     val (collisions, newWorldHistory) = updateWorldHistory(worldHistory.`@`)
     worldHistory reset newWorldHistory
     controls.swap(c => c.copy(collision = addCollisions(collisions, c.collision)))
   }
 
-  private def findSun(world: World) =
+  def findSun(world: World) =
     world.find(_.name.contains("sun")).get
 
-  private def centerScreen(controls: Atom[Controls], worldHistory: Atom[Worlds]) = {
+  def centerScreen(controls: Atom[Controls], worldHistory: Atom[Worlds]) = {
     val sunPosition = findSun(worldHistory.`@`.head).pos
     controls.reset(controls.`@`.copy(sunCenter = sunPosition))
   }
 
-  private def magnify(factor: Double, controls: Atom[Controls], worldHistory: Atom[Worlds]): Unit =
+  def magnify(factor: Double, controls: Atom[Controls], worldHistory: Atom[Worlds]): Unit =
     controls.swap(c => c.copy(magnification = c.magnification * factor))
 
-  private def shiftScreen(direction: Pos, controls: Atom[Controls], worldHistory: Atom[Worlds]): Unit =
+  def shiftScreen(direction: Pos, controls: Atom[Controls], worldHistory: Atom[Worlds]): Unit =
     controls.swap(c => c.copy(sunCenter = Pos.add(direction, c.sunCenter)))
 
-  private def clearTrails(worldHistory: Atom[Worlds]): Unit =
+  def clearTrails(worldHistory: Atom[Worlds]): Unit =
     worldHistory.reset(worldHistory.`@`.head :: Nil)
 
-  private def slowDown(controls: Atom[Controls]): Unit =
+  def slowDown(controls: Atom[Controls]): Unit =
     controls.swap(c => c.copy(delay = c.delay.inc))
 
-  private def speedUp(controls: Atom[Controls]): Unit =
+  def speedUp(controls: Atom[Controls]): Unit =
     controls.swap(c => c.copy(delay = c.delay.dec))
 
-  private def trackSun(controls: Atom[Controls]): Unit =
+  def trackSun(controls: Atom[Controls]): Unit =
     controls.swap(c => c.copy(trackSun = !c.trackSun))
 
-  private def handleKey(c: Int, shift: Boolean, worldHistory: Atom[Worlds], controls: Atom[Controls]): Unit = c match {
+  def handleKey(c: Int, shift: Boolean, worldHistory: Atom[Worlds], controls: Atom[Controls]): Unit = c match {
     case KeyEvent.VK_LEFT => shiftScreen(Pos(-10 * (if (shift) 10 else 1), 0), controls, worldHistory)
     case KeyEvent.VK_UP => shiftScreen(Pos(0, -10 * (if (shift) 10 else 1)), controls, worldHistory)
     case KeyEvent.VK_RIGHT => shiftScreen(Pos(10 * (if (shift) 10 else 1), 0), controls, worldHistory)
@@ -161,7 +156,7 @@ package object orbit {
     case _ =>
   }
 
-  private def worldPanel(frame: JFrame, worldHistory: Atom[Worlds], controls: Atom[Controls]) = {
+  def worldPanel(frame: JFrame, worldHistory: Atom[Worlds], controls: Atom[Controls]) = {
     new JPanel() with KeyListener with MouseListener {
       override def paintComponent(g: Graphics): Unit = {
         super.paintComponent(g)
@@ -189,7 +184,7 @@ package object orbit {
     }
   }
 
-  private def randomVelocity(p: Pos, sun: Obj): Vec = {
+  def randomVelocity(p: Pos, sun: Obj): Vec = {
     val sp = sun.pos
     val sd = Pos.distance(p, sp)
     val v = math.sqrt(1 / sd)
@@ -197,31 +192,31 @@ package object orbit {
     Vec.scale(direction, Random.nextDouble() * 0.01 + (v * 13.5 * 3))
   }
 
-  private def randomPosition(sunPos: Pos): Pos = {
+  def randomPosition(sunPos: Pos): Pos = {
     val r = Random.nextInt(300) + 30
     val theta = Random.nextDouble() * 2 * math.Pi
     Pos.add(sunPos, Pos(r * math.cos(theta), r * math.sin(theta)))
   }
 
-  private def randomObject(sun: Obj, n: Int): Obj = {
+  def randomObject(sun: Obj, n: Int): Obj = {
     val sp = sun.pos
     val p = randomPosition(sp)
     Obj(p, Random.nextDouble() * 0.2, randomVelocity(p, sun), Vec(), s"r$n")
   }
 
-  private def createWorld(objectCount: Int, sunMass: Double): World = {
+  def createWorld(objectCount: Int, sunMass: Double): World = {
     val v0 = Vec()
     val sun = Obj(center, sunMass, Vec(0, 0), v0, "sun")
     val world: World = (objectCount to 1 by -1).map(randomObject(sun, _))(breakOut)
     sun +: world
   }
 
-  private def addObjectToWorld(o: Obj, worldHistory: Worlds): Worlds = {
+  def addObjectToWorld(o: Obj, worldHistory: Worlds): Worlds = {
     val currentWorld = worldHistory.head :+ o
     currentWorld :: worldHistory.tail
   }
 
-  private def handleMouse(worldHistory: Atom[Worlds], controls: Atom[Controls]) = for {
+  def handleMouse(worldHistory: Atom[Worlds], controls: Atom[Controls]) = for {
     c <- controls
     ue <- c.mouseUp
     de <- c.mouseDown
@@ -236,7 +231,7 @@ package object orbit {
     controls.swap(_.copy(mouseDown = None, mouseUp = None))
   }
 
-  private def worldFrame(objectCount: Int, sunMass: Double)(implicit ec: ExecutionContext) = {
+  def worldFrame(objectCount: Int, sunMass: Double)(implicit ec: ExecutionContext) = {
     val controls = Atom(Controls(Magnification(1.0), center, Delay(0), trackSun = true, List(), 0, 0, None, None))
     val worldHistory = Atom(createWorld(objectCount, sunMass) :: Nil)
     val frame = new JFrame("Orbit")
