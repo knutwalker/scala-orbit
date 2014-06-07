@@ -276,121 +276,62 @@ There's even a [Twitter account](https://twitter.com/learnclojure) that teaches 
 
 However, these are the (totally scientific) line counts.
 
-Uncle Bobs Clojure code:
+Complete project including test sources end everything:
 
 ```
-∵ cloc src/
-      13 text files.
-      13 unique files.
+∵ cloc clojureOrbit/src/ src/
+      26 text files.
+      26 unique files.
        0 files ignored.
 
-http://cloc.sourceforge.net v 1.60  T=0.04 s (347.6 files/s, 19040.0 lines/s)
+http://cloc.sourceforge.net v 1.60  T=0.09 s (290.2 files/s, 15852.0 lines/s)
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
 Clojure                         13            112              0            600
--------------------------------------------------------------------------------
-SUM:                            13            112              0            600
--------------------------------------------------------------------------------
-```
-
-My Scala version:
-
-```
-∵ cloc src/
-      13 text files.
-      13 unique files.
-       0 files ignored.
-
-http://cloc.sourceforge.net v 1.60  T=0.05 s (249.2 files/s, 13573.9 lines/s)
--------------------------------------------------------------------------------
-Language                     files          blank        comment           code
--------------------------------------------------------------------------------
 Scala                           13            129              0            579
 -------------------------------------------------------------------------------
-SUM:                            13            129              0            579
+SUM:                            26            241              0           1179
 -------------------------------------------------------------------------------
 ```
 
-This includes source and test files plus my atom implementation and the additional features.
-If I count only the source files:
-
-Clojure:
+Only the relevant source files, sans tests and atom:
 
 ```
-∵ cloc --not-match-f='.*(_test|-tests).clj' src/
-       8 text files.
-       8 unique files.
+∵ cloc --not-match-f='atom.scala|.*(_test|-tests).clj' clojureOrbit/src/ src/main/
+      14 text files.
+      14 unique files.
        0 files ignored.
 
-http://cloc.sourceforge.net v 1.60  T=0.03 s (229.3 files/s, 12641.9 lines/s)
--------------------------------------------------------------------------------
-Language                     files          blank        comment           code
--------------------------------------------------------------------------------
-Clojure                          8             75              0            366
--------------------------------------------------------------------------------
-SUM:                             8             75              0            366
--------------------------------------------------------------------------------
-```
-
-Scala:
-
-```
-∵ cloc --not-match-f=atom.scala  src/main/
-       6 text files.
-       6 unique files.
-       0 files ignored.
-
-http://cloc.sourceforge.net v 1.60  T=0.03 s (179.2 files/s, 13557.9 lines/s)
+http://cloc.sourceforge.net v 1.60  T=0.06 s (232.4 files/s, 14854.8 lines/s)
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
 Scala                            6             82              0            372
+Clojure                          8             75              0            366
 -------------------------------------------------------------------------------
-SUM:                             6             82              0            372
+SUM:                            14            157              0            738
 -------------------------------------------------------------------------------
 ```
 
-
-And the counts for the relevant entities, sans the UI stuff
-
-
-Clojure:
+And only the relevant entities, sans the UI stuff:
 
 ```
-∵ cloc --not-match-f='.*(_test|-tests).clj' src/physics/
-       5 text files.
-       5 unique files.
+∵ cloc --not-match-f='.*(_test|-tests).clj' clojureOrbit/src/physics/ src/main/scala/physics/
+       9 text files.
+       9 unique files.
        0 files ignored.
 
-http://cloc.sourceforge.net v 1.60  T=0.02 s (235.4 files/s, 8098.7 lines/s)
+http://cloc.sourceforge.net v 1.60  T=0.03 s (273.6 files/s, 9790.3 lines/s)
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
 Clojure                          5             36              0            136
--------------------------------------------------------------------------------
-SUM:                             5             36              0            136
--------------------------------------------------------------------------------
-```
-
-Scala:
-
-```
-∵ cloc --not-match-f=atom.scala  src/main/scala/physics/
-       4 text files.
-       4 unique files.
-       0 files ignored.
-
-http://cloc.sourceforge.net v 1.60  T=0.02 s (242.1 files/s, 9077.8 lines/s)
--------------------------------------------------------------------------------
-Language                     files          blank        comment           code
--------------------------------------------------------------------------------
 Scala                            4             29              0            121
 -------------------------------------------------------------------------------
-SUM:                             4             29              0            121
+SUM:                             9             65              0            257
 -------------------------------------------------------------------------------
 ```
-
 
 So, Scala and Clojure appear to be quite similar in their conciseness
 Now, just counting lines is a silly measure for the conciseness of the code, but it's a start. I'd suspect different numbers if I were to compare Scala against, say, Java ... as I said, totally scientific.
