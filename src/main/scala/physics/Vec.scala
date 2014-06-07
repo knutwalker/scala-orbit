@@ -1,6 +1,6 @@
 package physics
 
-final case class Vec(p: Pos) extends AnyVal {
+case class Vec(p: Pos) extends AnyVal {
   def x = p.x
   def y = p.y
 }

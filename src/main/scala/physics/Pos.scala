@@ -1,6 +1,6 @@
 package physics
 
-final case class Pos(x: Double = 0, y: Double = 0)
+case class Pos(x: Double = 0, y: Double = 0)
 object Pos {
   def isOrigin(p: Pos): Boolean =
     p.x == 0 && p.y == 0

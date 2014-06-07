@@ -17,8 +17,7 @@ object Obj {
 
   def accumulateForces(o: Obj, world: World): Obj = {
     val newForce = world.foldLeft(Vec()) { (f, obj) =>
-      if (obj == o) f else Vec.add(f, forceBetween(o, obj))
-    }
+      if (obj == o) f else Vec.add(f, forceBetween(o, obj)) }
     o.copy(force = newForce)
   }
 

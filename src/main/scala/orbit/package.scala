@@ -2,7 +2,6 @@ import java.awt.{Dimension, Graphics, Color}
 import java.awt.event._
 import javax.swing.{JFrame, JPanel}
 
-import scala.collection.breakOut
 import scala.concurrent.{ExecutionContext, Future, blocking}
 import scala.util.Random
 
@@ -18,7 +17,7 @@ package object orbit {
   val historySize = 70
 
   def sizeByMass(o: Obj) =
-    math.sqrt(o.mass)
+    math.sqrt(o.mass) + 0
 
   def opacity(epoch: Int): Int =
     255 - (epoch * 255.0 / historySize).toInt
@@ -126,7 +125,7 @@ package object orbit {
     controls.swap(c => c.copy(magnification = c.magnification * factor))
 
   def shiftScreen(direction: Pos, controls: Atom[Controls], worldHistory: Atom[Worlds]): Unit =
-    controls.swap(c => c.copy(sunCenter = Pos.add(direction, c.sunCenter)))
+    controls.swap(c => c.copy(sunCenter = Pos.add(direction, c.sunCenter), trackSun = false))
 
   def clearTrails(worldHistory: Atom[Worlds]): Unit =
     worldHistory.reset(worldHistory.`@`.head :: Nil)
@@ -207,8 +206,7 @@ package object orbit {
   def createWorld(objectCount: Int, sunMass: Double): World = {
     val v0 = Vec()
     val sun = Obj(center, sunMass, Vec(0, 0), v0, "sun")
-    val world: World = (objectCount to 1 by -1).map(randomObject(sun, _))(breakOut)
-    sun +: world
+    sun +: Vector.tabulate(objectCount)(n => randomObject(sun, objectCount - n))
   }
 
   def addObjectToWorld(o: Obj, worldHistory: Worlds): Worlds = {
@@ -250,8 +248,8 @@ package object orbit {
     Future { blocking {
       while(true) {
         val startTime = System.currentTimeMillis()
-        val sleepTime = controls.`@`.delay.d * 2
-        Thread.sleep(sleepTime max 1)
+        val delay = controls.`@`.delay.d
+        if (delay > 0) Thread.sleep(delay * 2)
         if (controls.`@`.trackSun) centerScreen(controls, worldHistory)
         updateScreen(worldHistory, controls)
         handleMouse(worldHistory, controls)

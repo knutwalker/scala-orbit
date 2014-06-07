@@ -8,8 +8,8 @@ object atom {
 
   implicit final class RichAtom[T](val underlying: AtomicReference[T]) extends AnyVal {
     def `@`: T = underlying.get()
-    def reset(v: T): Unit = underlying.set(v)
-    def swap(fun: T => T): Unit = {
+    def reset(v: T) = underlying.set(v)
+    def swap(fun: T => T) {
       def loop(): Boolean = {
         val prev = underlying.get()
         val next = fun(prev)
@@ -17,9 +17,8 @@ object atom {
       }
       loop()
     }
-    def foreach(fun: T => Unit) : Unit = fun(underlying.get())
-    def flatMap[V](fun: T => V): V = fun(underlying.get())
+    def foreach(fun: T => Unit) = fun(underlying.get())
   }
 
-  def Atom[T](item: T): Atom[T] = new AtomicReference[T](item)
+  def Atom[T](item: T): Atom[T] = new AtomicReference(item)
 }
