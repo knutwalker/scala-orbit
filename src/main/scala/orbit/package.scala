@@ -255,7 +255,8 @@ package object orbit {
     Future { blocking {
       while(true) {
         val startTime = System.currentTimeMillis()
-        Thread.sleep(controls.`@`.delay.d * 2)
+        val sleepTime = controls.`@`.delay.d * 2
+        Thread.sleep(sleepTime max 1)
         if (controls.`@`.trackSun) centerScreen(controls, worldHistory)
         updateScreen(worldHistory, controls)
         handleMouse(worldHistory, controls)
