@@ -26,6 +26,7 @@ This project uses [`sbt`](http://www.scala-sbt.org/).
 ### build uberjar
 ```
 ./sbt assembly
+java -jar target/scala-2.11/scala-orbit-assembly-1.0.jar
 ```
 
 ### develop
