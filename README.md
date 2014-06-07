@@ -46,6 +46,7 @@ In another terminal, just enter the sbt shell
 And use the task `re-start` if you want to run the GUI.
 
 With this setup you have:
+
 1. a forked VM for every start, so you savely kill it without getting thrown out of the sbt shell
 2. automatic test exectution on every file change. code -> save -> see tests fail (or pass)
 
