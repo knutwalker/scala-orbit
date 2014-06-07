@@ -7,6 +7,48 @@ A Scala port of Uncle Bobs [clojureOrbit](https://github.com/unclebob/clojureOrb
 This is mostly for fun, to see how certain idiomatic Clojure would translate to Scala.
 Sometimes, a more Clojure-esque Scala is written (e.g. using stuff `->>` und `@`), and sometimes, it's the other way around (e.g. using `isCollide` instead of `collide?`).
 
+## Usage
+
+This project uses [`sbt`](http://www.scala-sbt.org/).
+
+### run
+
+```
+./sbt run
+```
+
+### test
+
+```
+./sbt test
+```
+
+### build uberjar
+```
+./sbt assembly
+```
+
+### develop
+
+Run this in one terminal
+
+```
+./sbt ~test
+```
+
+In another terminal, just enter the sbt shell
+
+```
+./sbt
+```
+
+And use the task `re-start` if you want to run the GUI.
+
+With this setup you have:
+1. a forked VM for every start, so you savely kill it without getting thrown out of the sbt shell
+2. automatic test exectution on every file change. code -> save -> see tests fail (or pass)
+
+
 ## Differences from Uncle Bob
 
 ### Changes in code style
