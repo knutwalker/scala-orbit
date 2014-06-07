@@ -1,4 +1,4 @@
-name := """orbit"""
+name := """scala-orbit"""
 
 version := "1.0"
 
