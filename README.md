@@ -47,8 +47,8 @@ And use the task `re-start` if you want to run the GUI.
 
 With this setup you have:
 
-1. a forked VM for every start, so you savely kill it without getting thrown out of the sbt shell
-2. automatic test exectution on every file change. code -> save -> see tests fail (or pass)
+1. a forked VM for every start, so you safely kill it without getting thrown out of the sbt shell
+2. automatic test execution on every file change. code -> save -> see tests fail (or pass)
 
 
 ## Differences from Uncle Bob
@@ -143,7 +143,7 @@ The general intention (entites) of the program did not change, but I modified so
 
 Clojure and Scala are not so different. This is mostly due to the functional nature of the program.
 Of course you can have Scala and Clojure code that differ tremendously and especially Scala code, that is not functional at all.
-But, if you know your way around functional programming, the difference between Scala and Clojure becomes more and more just syntax (and a bit of types). Using higher order functions, dealing with state and immutability, recursion etc. is all very similar (though, Scala __does__ have tail recursion).
+But, if you know your way around functional programming, the difference between Scala and Clojure becomes more and more just syntax (and a bit of types). Using higher order functions, dealing with state and immutability, recursion etc. is all very similar (though, Scala _does_ have tail recursion).
 A typical landmark of functional code is, that functions tend to have a bunch of assignment statements and then few, ideally just one actual thing they do.
 This looks quite good in Clojure with `let`.
 
@@ -155,7 +155,7 @@ This looks quite good in Clojure with `let`.
     (+ 23 42 1337)))
 ```
 
-Whereas in Scala, this would only be convention.
+Whereas in Scala, this would only be a convention.
 
 ```scala
 def foo(a: Any, b: Any) = {
@@ -170,13 +170,12 @@ def foo(a: Any, b: Any) = {
 ### Atoms
 
 [`atom`s](http://clojure.org/atoms) seam really nice. However, Scala does not have atoms, so I kinda had to [implement](src/main/scala/orbit/atom.scala#L5) them myself.
-
 But since atoms are quite simple, this was an easy task. Given their [Clojure implementation](https://github.com/clojure/clojure/blob/master/src/jvm/clojure/lang/Atom.java), I'm not that far off.
 
 ### doto
 
 [`doto`](http://clojure.github.io/clojure/clojure.core-api.html#clojure.core/doto) is another nice thing for Java interop (especially with the [GUI stuff](https://github.com/unclebob/clojureOrbit/blob/master/src/orbit/world.clj#L235-L243)).
-There is no direct Scala equivalent, but due to the way Scala handle blocks and imports, it can be [simulated very easy](/src/main/scala/orbit/package.scala#L238-L246):
+There is no direct Scala equivalent, but due to the way Scala handle blocks and imports, it can be [simulated very easily](/src/main/scala/orbit/package.scala#L238-L246):
 
 ```clojure
 (doto (new java.util.HashMap) (.put "a" 1) (.put "b" 2))
@@ -192,7 +191,7 @@ val m = new java.util.HashMap
   put("b", 2) }
 ```
 
-Ok, not __really__ the same, but close enough.
+Ok, not _really_ the same, but close enough.
 
 
 ### vec
@@ -254,7 +253,7 @@ Clojure with overloaded methods and recur
      :else (recur o (rest world) (vector/add f (force-between o (first world)))))))
 ```
 
-Scala idomatic code uses nested tail recursion for this
+Scala idiomatic code uses nested tail recursion for this
 
 ```scala
 def accumulateForces(o: Obj, world: World): Obj = {
