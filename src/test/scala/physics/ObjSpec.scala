@@ -8,9 +8,9 @@ class ObjSpec extends UnitSpec with TestUtilities {
   val o3 = Obj(Pos(4, 5), 4, v0, v0, "o3")
   val world = Vector(o1, o2, o3)
 
-  def worldMomentum(world: Objs) = world.map(o => Vec.scale(o.velocity, o.mass)).reduce(Vec.add)
+  def worldMomentum(world: World) = world.map(o => Vec.scale(o.velocity, o.mass)).reduce(Vec.add)
 
-  def worldEnergy(world: Objs) = world.map(o => square(Vec.magnitude(o.velocity)) * o.mass * 0.5)
+  def worldEnergy(world: World) = world.map(o => square(Vec.magnitude(o.velocity)) * o.mass * 0.5)
 
   test("default creation") {
     val o = Obj()
@@ -106,17 +106,20 @@ class ObjSpec extends UnitSpec with TestUtilities {
     assert(om.force == Vec(2, 2))
   }
 
-  test("collide") {
-    val cos = Obj.collide(o1, o2, world)
-    assert(cos.size == 2)
-    assert(cos.exists(_ == Obj.merge(o1, o2)))
-    assert(cos.exists(_ == o3))
-  }
   test("collide all") {
-    val cos = Obj.collideAll(world)
-    assert(cos.size == 2)
-    assert(cos.exists(_ == Obj.merge(o1, o2)))
-    assert(cos.exists(_ == o3))
+    val (collisions, collidedWorld) = Obj.collideAll(world)
+    assert(collidedWorld.size == 2)
+    assert(collidedWorld.exists(_ == Obj.merge(o1, o2)))
+    assert(collidedWorld.exists(_ == o3))
+    assert(collisions.size == 1)
+    assert(collisions.head == Obj.merge(o1, o2).pos)
   }
 
+  test("update all") {
+    val (collisions, newWorld) = Obj.updateAll(world)
+    assert(collisions.size == 1)
+    assert(newWorld.size == 2)
+    assert(newWorld.map(_.name).toSet == Set("o2.o1", "o3"))
+    assert(vectorCloseTo(worldMomentum(world), worldMomentum(newWorld)))
+  }
 }

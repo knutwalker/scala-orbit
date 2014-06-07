@@ -1,5 +1,3 @@
 package object physics {
-
-  type Objs = Vector[Obj]
-
+  type World = Vector[Obj]
 }

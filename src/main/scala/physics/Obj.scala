@@ -3,7 +3,8 @@ package physics
 case class Obj(pos: Pos = Pos(), mass: Double = 0, velocity: Vec = Vec(), force: Vec = Vec(), name: String = "TILT")
 object Obj {
 
-  def gravity(m1: Double, m2: Double, r: Double): Double = (m1 * m2) / (r * r)
+  def gravity(m1: Double, m2: Double, r: Double): Double =
+    (m1 * m2) / (r * r)
 
   def forceBetween(o1: Obj, o2: Obj): Vec = {
     val p1 = o1.pos
@@ -14,40 +15,37 @@ object Obj {
     Vec.scale(uv, g)
   }
 
-  // List would be better
-  def accumulateForces(o: Obj, os: Objs): Obj = {
-    def recur(os: Objs, f: Vec): Vec = os match {
-      case Vector() => f
-      case nonempty =>
-        val first = nonempty.head
-        val rest = nonempty.tail
-        if (first == o) recur(rest, f)
-        else recur(rest, Vec.add(f, forceBetween(o, first)))
+  def accumulateForces(o: Obj, world: World): Obj = {
+    val newForce = world.foldLeft(Vec()) { (f, obj) =>
+      if (obj == o) f else Vec.add(f, forceBetween(o, obj))
     }
-    o.copy(force = recur(os, Vec()))
+    o.copy(force = newForce)
   }
 
-  def calculateForcesOnAll(os: Objs): Objs = os.map(accumulateForces(_, os))
+  def calculateForcesOnAll(world: World): World =
+    world.map(accumulateForces(_, world))
 
   def accelerate(o: Obj): Obj = {
-    val Obj(_, m, v, f, _) = o
+    val m = o.mass
+    val v = o.velocity
+    val f = o.force
     val av = Vec.add(v, Vec.scale(f, 1.0 / m))
     o.copy(velocity = av)
   }
 
-  def accelerateAll(os: Objs): Objs = os.map(accelerate)
+  def accelerateAll(world: World): World =
+    world.map(accelerate)
 
-  def reposition(o: Obj): Obj = {
-    val Obj(p, _, v, _, _) = o
-    o.copy(pos = Pos.add(p, v.p))
-  }
+  def reposition(o: Obj): Obj =
+    o.copy(pos = Pos.add(o.pos, o.velocity.p))
 
-  def repositionAll(os: Objs): Objs = os.map(reposition)
+  def repositionAll(world: World): World =
+    world.map(reposition)
 
   def isCollided(o1: Obj, o2: Obj): Boolean = {
-    val p1 = o1.pos
-    val p2 = o2.pos
-    Pos.distance(p1, p2) <= 3
+    val distance = Pos.distance(o1.pos, o2.pos)
+    val radius = math.sqrt(o1.mass + o2.mass)
+    distance <= (radius max 3)
   }
 
   private def centerOfMass(o1: Obj, o2: Obj): Pos = {
@@ -70,22 +68,29 @@ object Obj {
     Obj(p, m, v, f, n)
   }
 
-  def collide(o1: Obj, o2: Obj, os: Objs): Objs = {
-    os.filterNot(Set(o1, o2)) :+ merge(o1, o2)
+  private def remove(o: Obj, world: World) =
+    world.filterNot(_ == o)
+
+  private def differenceList(w1: World, w2: World) =
+    w2.foldLeft(w1)((w, o) => remove(o, w))
+
+  def collideAll(world: World): (List[Pos], World) = {
+    def recur(collidingWorld: World, collidedWorld: World, collisions: List[Pos]): (List[Pos], World) = collidingWorld match {
+      case Vector() => (collisions, collidedWorld)
+      case _ =>
+        val impactor = collidingWorld.head
+        val targets = collidingWorld.tail
+        val colliders = targets.filter(isCollided(impactor, _))
+        val merger = colliders.foldLeft(impactor)(merge)
+        val survivors = differenceList(targets, colliders)
+        val newCollisions = if (colliders.isEmpty) collisions else merger.pos :: collisions
+        recur(survivors, collidedWorld :+ merger, newCollisions)
+    }
+    recur(world, Vector(), List())
   }
 
-  def collideAll(os: Objs): Objs = {
-    def recur(pairs: Iterator[Objs], cos: Objs): Objs =
-      if (!pairs.hasNext) cos
-      else {
-        val Vector(o1, o2) = pairs.next()
-        if (isCollided(o1, o2)) recur(pairs, collide(o1, o2, cos))
-        else recur(pairs, cos)
-      }
-    recur(os.combinations(2), os)
-  }
-
-  def updateAll(os: Objs): Objs = {
-    (collideAll _ andThen calculateForcesOnAll andThen accelerateAll andThen repositionAll)(os)
+  def updateAll(world: World): (List[Pos], World) = {
+    val (collisions, collidedWorld) = collideAll(world)
+    (collisions, (calculateForcesOnAll _ andThen accelerateAll andThen repositionAll)(collidedWorld))
   }
 }

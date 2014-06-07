@@ -1,23 +1,25 @@
 package orbit
 
 import java.util.concurrent.atomic.AtomicReference
-import java.util.function.UnaryOperator
 
 object atom {
 
   type Atom[T] = AtomicReference[T]
 
-  private def fun2unop[T](fun: T => T): UnaryOperator[T] = new UnaryOperator[T] {
-    def apply(t: T): T = fun(t)
-  }
-
   implicit final class RichAtom[T](val underlying: AtomicReference[T]) extends AnyVal {
-    def alter(fun: T => T): Unit = {
-      underlying.updateAndGet(fun2unop(fun))
+    def `@`: T = underlying.get()
+    def reset(v: T): Unit = underlying.set(v)
+    def swap(fun: T => T): Unit = {
+      def loop(): Boolean = {
+        val prev = underlying.get()
+        val next = fun(prev)
+        underlying.compareAndSet(prev, next) || loop()
+      }
+      loop()
     }
+    def foreach(fun: T => Unit) : Unit = fun(underlying.get())
+    def flatMap[V](fun: T => V): V = fun(underlying.get())
   }
 
-  implicit final class Any2Atom[T](val item: T) extends AnyVal {
-    def `@` = new AtomicReference[T](item)
-  }
+  def Atom[T](item: T): Atom[T] = new AtomicReference[T](item)
 }
