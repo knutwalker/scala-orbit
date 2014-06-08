@@ -1,15 +1,13 @@
-import java.awt.{Dimension, Graphics, Color}
-import java.awt.event._
-import javax.swing.{JFrame, JPanel}
+import java.awt.{Color, Graphics}
+
+import physics.{Obj, Pos, Vec, World}
 
 import scala.concurrent.{ExecutionContext, Future, blocking}
 import scala.util.Random
 
-import physics.{World, Pos, Obj, Vec}
-
 
 package object orbit {
-  import atom._
+  import orbit.atom._
 
   type Worlds = List[World]
 
@@ -130,58 +128,32 @@ package object orbit {
   def clearTrails(worldHistory: Atom[Worlds]): Unit =
     worldHistory.reset(worldHistory.`@`.head :: Nil)
 
-  def slowDown(controls: Atom[Controls]): Unit =
-    controls.swap(c => c.copy(delay = c.delay.inc))
-
-  def speedUp(controls: Atom[Controls]): Unit =
-    controls.swap(c => c.copy(delay = c.delay.dec))
+  def changeSpeed(diff: Int, controls: Atom[Controls]): Unit =
+    controls.swap(c => c.copy(delay = c.delay + diff))
 
   def trackSun(controls: Atom[Controls]): Unit =
     controls.swap(c => c.copy(trackSun = !c.trackSun))
 
-  def handleKey(c: Int, shift: Boolean, worldHistory: Atom[Worlds], controls: Atom[Controls]): Unit = c match {
-    case KeyEvent.VK_LEFT => shiftScreen(Pos(-10 * (if (shift) 10 else 1), 0), controls, worldHistory)
-    case KeyEvent.VK_UP => shiftScreen(Pos(0, -10 * (if (shift) 10 else 1)), controls, worldHistory)
-    case KeyEvent.VK_RIGHT => shiftScreen(Pos(10 * (if (shift) 10 else 1), 0), controls, worldHistory)
-    case KeyEvent.VK_DOWN => shiftScreen(Pos(0, 10 * (if (shift) 10 else 1)), controls, worldHistory)
-    case KeyEvent.VK_PLUS | KeyEvent.VK_EQUALS => magnify(if (shift) 1.3 else 1.1, controls, worldHistory)
-    case KeyEvent.VK_MINUS => magnify(if (shift) 0.7 else 0.9, controls, worldHistory)
-    case KeyEvent.VK_SPACE => centerScreen(controls, worldHistory)
-    case KeyEvent.VK_S => slowDown(controls)
-    case KeyEvent.VK_F => speedUp(controls)
-    case KeyEvent.VK_T => trackSun(controls)
-    case KeyEvent.VK_R => clearTrails(worldHistory)
-    case KeyEvent.VK_Q => System.exit(1)
-    case _ =>
+  def handleKey(ki: KeyIntention, worldHistory: Atom[Worlds], controls: Atom[Controls]) = ki match {
+    case Magnify(factor) => magnify(factor, controls, worldHistory)
+    case ChangeSpeed(diff) => changeSpeed(diff, controls)
+    case ShiftScreen(diff) => shiftScreen(diff, controls, worldHistory)
+    case TrackSun => trackSun(controls)
+    case CenterScreen => centerScreen(controls, worldHistory)
+    case ClearTrails => clearTrails(worldHistory)
   }
 
-  def worldPanel(frame: JFrame, worldHistory: Atom[Worlds], controls: Atom[Controls]) = {
-    new JPanel() with KeyListener with MouseListener {
-      override def paintComponent(g: Graphics): Unit = {
-        super.paintComponent(g)
-        worldHistory.`@`.zipWithIndex.foreach(w => drawWorldPanel(g, w._1, w._2, controls))
-      }
-
-      def keyPressed(e: KeyEvent) =
-        handleKey(e.getKeyCode, e.isShiftDown, worldHistory, controls)
-
-      def mousePressed(e: MouseEvent) =
-        if (controls.`@`.mouseDown.isEmpty)
-          controls.swap(_.copy(mouseDown = Some(e), mouseUp = None))
-
-      def mouseReleased(e: MouseEvent) =
-        if (controls.`@`.mouseUp.isEmpty)
-          controls.swap(_.copy(mouseUp = Some(e)))
-
-      override def getPreferredSize: Dimension = new Dimension(1000, 1000)
-
-      def keyReleased(e: KeyEvent) = ()
-      def keyTyped(e: KeyEvent) = ()
-      def mouseEntered(e: MouseEvent) = ()
-      def mouseClicked(e: MouseEvent) = ()
-      def mouseExited(e: MouseEvent) = ()
-    }
+  def paintAllWorlds(g: Graphics, worldHistory: Atom[Worlds], controls: Atom[Controls]): Unit = {
+    worldHistory.`@`.zipWithIndex.foreach(w => drawWorldPanel(g, w._1, w._2, controls))
   }
+
+  def handleMouseDown(controls: Atom[Controls], mi: MouseInteraction): Unit =
+    if (controls.`@`.addObject.start.isEmpty)
+      controls.swap(_.copy(addObject = AddObject(Some(mi), None)))
+
+  def handleMouseUp(controls: Atom[Controls], mi: MouseInteraction): Unit =
+    if (controls.`@`.addObject.end.isEmpty)
+      controls.swap(c => c.copy(addObject = c.addObject.copy(end = Some(mi))))
 
   def randomVelocity(p: Pos, sun: Obj): Vec = {
     val sp = sun.pos
@@ -216,51 +188,32 @@ package object orbit {
 
   def handleMouse(worldHistory: Atom[Worlds], controls: Atom[Controls]) = for {
     c <- controls
-    ue <- c.mouseUp
-    de <- c.mouseDown
-    downPos = Pos(de.getX, de.getY)
-    upPos = Pos(ue.getX, ue.getY)
-    duration = ue.getWhen - de.getWhen
-    pos = toObjectCoords(downPos, c.magnification, c.sunCenter)
-    v = Vec.scale(Vec(Pos.subtract(upPos, downPos)), 0.01 / c.magnification.m)
+    start <- c.addObject.start
+    end <- c.addObject.end
+    duration = end.when - start.when
+    pos = toObjectCoords(start.pos, c.magnification, c.sunCenter)
+    v = Vec.scale(Vec(Pos.subtract(end.pos, start.pos)), 0.01 / c.magnification.m)
     obj = Obj(pos, duration / 100.0, v, Vec(), "m")
   } {
     worldHistory.swap(h => addObjectToWorld(obj, h))
-    controls.swap(_.copy(mouseDown = None, mouseUp = None))
+    controls.swap(_.copy(addObject = AddObject(None, None)))
   }
 
-  def worldFrame(objectCount: Int, sunMass: Double)(implicit ec: ExecutionContext) = {
-    val controls = Atom(Controls(Magnification(1.0), center, Delay(0), trackSun = true, List(), 0, 0, None, None))
+  def worldState(objectCount: Int, sunMass: Double): (Atom[List[World]], Atom[Controls]) = {
     val worldHistory = Atom(createWorld(objectCount, sunMass) :: Nil)
-    val frame = new JFrame("Orbit")
-    val panel = worldPanel(frame, worldHistory, controls)
-
-    { import panel._
-      setFocusable(true)
-      addKeyListener(panel)
-      addMouseListener(panel) }
-    { import frame._
-      add(panel)
-      pack()
-      setVisible(true)
-      setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE) }
-
-    Future { blocking {
-      while(true) {
-        val startTime = System.currentTimeMillis()
-        val delay = controls.`@`.delay.d
-        if (delay > 0) Thread.sleep(delay * 2)
-        if (controls.`@`.trackSun) centerScreen(controls, worldHistory)
-        updateScreen(worldHistory, controls)
-        handleMouse(worldHistory, controls)
-        controls.swap(c => c.copy(tickTime = System.currentTimeMillis() - startTime, tick = c.tick + 1))
-        panel.repaint()
-      }
-    }}
+    val controls = Atom(Controls(Magnification(1.0), center, Delay(0), trackSun = true, List(), 0, 0, AddObject(None, None)))
+    (worldHistory, controls)
   }
 
-  def runWorld(settings: Settings) = {
-    import scala.concurrent.ExecutionContext.Implicits.global
-    worldFrame(settings.objectCount, settings.sunMass)
-  }
+  def startWorld(worldHistory: Atom[Worlds], controls: Atom[Controls], repaint: => Unit)(implicit ec: ExecutionContext): Unit =
+    Future { blocking { while(true) {
+      val startTime = System.currentTimeMillis()
+      val delay = controls.`@`.delay.d
+      if (delay > 0) Thread.sleep(delay * 2)
+      if (controls.`@`.trackSun) centerScreen(controls, worldHistory)
+      updateScreen(worldHistory, controls)
+      handleMouse(worldHistory, controls)
+      controls.swap(c => c.copy(tickTime = System.currentTimeMillis() - startTime, tick = c.tick + 1))
+      repaint
+    }}}
 }
