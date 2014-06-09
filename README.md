@@ -340,3 +340,28 @@ Now, just counting lines is a silly measure for the conciseness of the code, but
 ### Wrap up
 
 Anyway, this was fun and I got to learn a bit Clojure on the way. Who knows, maybe, some day, I'll port some of my Scala stuff to Clojure :-)
+
+
+## Orbit controls
+
+Key  | Controls
+----- | -------
+Left  | move view to the left (shift for faster pace)
+Up    | move view upwards (shift for faster pace)
+Right | move view to the right (shift for faster pace)
+Down  | move view downwards (shift for faster pace)
+Plus  | zoom in (shift for greater zoom)
+Minus | zoom out (shift for greater zoom)
+0     | reset zoom level
+space | center screen (sun is always the center)
+s     | let the universe be slower
+f     | let the universe be faster
+t     | always center the sun (toggle)
+r     | clear all objects trails
+q     | quit
+
+
+Mouse interaction:
+Click to add new objects:
+- The longer you hold the click, the more mass the resulting object will have
+- The faster you moved the mouse during the click, the faster the resulting object will be
