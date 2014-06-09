@@ -173,13 +173,13 @@ object world {
     Obj(pos, duration / 100.0, v, Vec(), "m")
   }
 
-  def handleMouse(add: AddObject, controls: Atom[Controls], worlds: Atom[Worlds]): Unit =
+  def insertObject(start: Pos, end: Pos, duration: Long, controls: Atom[Controls], worlds: Atom[Worlds]): Unit =
     worlds swap { w =>
-      val obj = addObject(add.start, add.end, add.duration, controls.`@`)
+      val obj = addObject(start, end, duration, controls.`@`)
       addObjectToWorld(obj, w)
     }
 
-  def handleKey(key: KeyInteraction, controls: Atom[Controls], worlds: Atom[Worlds]): Unit = key match {
+  def handleInteraction(interaction: OrbitInteraction, controls: Atom[Controls], worlds: Atom[Worlds]) = interaction match {
     case Magnify(factor) => magnify(controls, factor)
     case ChangeSpeed(diff) => changeSpeed(controls, diff)
     case ShiftScreen(diff) => shiftScreen(controls, diff)
@@ -187,6 +187,7 @@ object world {
     case TrackSun => trackSun(controls)
     case CenterScreen => centerScreen(controls, worlds)
     case ClearTrails => clearTrails(worlds)
+    case AddObject(start, end, duration) => insertObject(start, end, duration, controls, worlds)
   }
 
   def worldState(objectCount: Int, sunMass: Double): (Atom[List[World]], Atom[Controls]) = {

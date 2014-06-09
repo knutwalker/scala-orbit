@@ -1,29 +1,20 @@
 package orbit
 
 import physics.Pos
-import rx.lang.scala.Observable
-import rx.lang.scala.schedulers.ComputationScheduler
-import rx.lang.scala.subjects.PublishSubject
 
 import scala.concurrent._
-import scala.concurrent.duration._
 import scala.swing._
 import scala.swing.event._
 
 object swing {
   import orbit.atom._
-  import orbit.world.{worldState, paintAllWorlds, handleKey, handleMouse, centerScreen, screenUpdate, ageWorld}
+  import orbit.world.{ageWorld, centerScreen, handleInteraction, paintAllWorlds, screenUpdate, worldState}
 
   trait WorldInteraction {
     def worldHistory: Atom[Worlds]
     def controls: Atom[Controls]
 
-    def handleInteractions(keys: Observable[KeyInteraction], mouse: Observable[AddObject]): Unit = {
-      keys.subscribe(handleKey(_, controls, worldHistory))
-      mouse.subscribe(handleMouse(_, controls, worldHistory))
-    }
-
-    def startWorld(implicit ec: ExecutionContext): Observable[Repaint.type] = {
+    def startWorld(repaint: => Unit)(implicit ec: ExecutionContext): Unit = {
       Future { blocking { while(true) {
         val startTime = System.currentTimeMillis()
         val delay = controls.`@`.delay.d
@@ -31,19 +22,14 @@ object swing {
         if (controls.`@`.trackSun) centerScreen(controls, worldHistory)
         screenUpdate(controls, worldHistory)
         controls.swap(c => c.copy(tickTime = System.currentTimeMillis() - startTime, tick = c.tick + 1))
+        repaint
       }}}
-      Observable.interval(10.millis, ComputationScheduler()).map(_ => Repaint)
     }
   }
 
   class SwingOrbit(settings: Settings) extends SimpleSwingApplication with WorldInteraction {
     val (worldHistory, controls) = worldState(settings.objectCount, settings.sunMass)
-
-    private val keyChannel = PublishSubject[KeyInteraction]()
-    private val mouseChannel = PublishSubject[MouseInteraction]()
-
-    def observeKeys: Observable[KeyInteraction] = keyChannel
-    def observeMouse: Observable[MouseInteraction] = mouseChannel
+    private val click: Atom[Option[ClickStarted]] = Atom(None)
 
     private val worldPanel = new Panel {
       focusable = true
@@ -70,18 +56,19 @@ object swing {
             case Key.F => ChangeSpeed(-1)
             case Key.T => TrackSun
             case Key.R => ClearTrails
-            case Key.Q =>
-              keyChannel.onCompleted()
-              mouseChannel.onCompleted()
-              SwingOrbit.this.quit(); ×
+            case Key.Q => SwingOrbit.this.quit(); ×
           }
-          intention foreach keyChannel.onNext
+          intention.foreach(handleInteraction(_, controls, worldHistory))
 
-        case e: MousePressed =>
-          mouseChannel onNext ClickStarted(e.when, Pos(e.point.x, e.point.y))
+        case e: MousePressed => click.swap {
+          case c@Some(x) => c
+          case None      => Some(ClickStarted(e.when, Pos(e.point.x, e.point.y)))
+        }
 
-        case e: MouseReleased =>
-          mouseChannel onNext ClickEnded(e.when, Pos(e.point.x, e.point.y))
+        case e: MouseReleased => click.`@`.foreach { start =>
+          handleInteraction(AddObject(start.pos, Pos(e.point.x, e.point.y), e.when - start.when), controls, worldHistory)
+          click reset None
+        }
       }
     }
 
@@ -91,36 +78,9 @@ object swing {
       contents = worldPanel
     }
 
-    private def mergeMouseInteractions(obs: Observable[MouseInteraction]): Observable[AddObject] = {
-      val chan = PublishSubject[AddObject]()
-      // TODO: does Rx isolate good enough to replace that with a regular var?
-      val click: Atom[Option[ClickStarted]] = Atom(None)
-
-      obs.subscribe(
-        onNext = {
-          case start: ClickStarted =>
-            click.swap {
-              case c@Some(x) => c
-              case None      => Some(start)
-            }
-          case ClickEnded(when, pos) =>
-            click.`@`.foreach { start =>
-              chan onNext AddObject(start.pos, pos, when - start.when)
-              click reset None
-            }
-        },
-        onError = chan.onError,
-        onCompleted = chan.onCompleted
-      )
-
-      chan
-    }
-
     override def startup(args: Array[String]): Unit = {
       super.startup(args)
-
-      handleInteractions(this.observeKeys, mergeMouseInteractions(this.observeMouse))
-      startWorld(ExecutionContext.global).subscribe(_ => worldPanel.repaint())
+      startWorld(worldPanel.repaint())(ExecutionContext.global)
     }
   }
 
